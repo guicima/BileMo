@@ -3,9 +3,9 @@ BileMo is a company offering a whole selection of high-end mobile phones.
 
 ## Set up the environnement
 **Install dependencies**
-<!-- 
+
 Install Docker
-[Get Docker](https://docs.docker.com/get-docker/) -->
+[Get Docker](https://docs.docker.com/get-docker/)
 
 Install Composer
 [Get Composer](https://getcomposer.org/)
@@ -18,7 +18,7 @@ Install composer dependencies
 composer install
 ```
 
-<!-- Start containers
+Start containers
 ```sh
 docker-compose up
 ```
@@ -26,7 +26,7 @@ or
 ```sh
 docker-compose up -d
 ```
-to run in detached mode. -->
+to run in detached mode.
 
 Start project in local
 ```sh
