@@ -18,6 +18,8 @@ Install composer dependencies
 composer install
 ```
 
+php bin/console lexik:jwt:generate-keypair
+
 Start containers
 ```sh
 docker-compose up

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Product;
 use App\Repository\ProductRepository;
+use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,7 +17,7 @@ class ProductController extends AbstractController
     public function collection(ProductRepository $productRepository, SerializerInterface $serializerInterface): JsonResponse
     {
         try {
-            return new JsonResponse($serializerInterface->serialize($productRepository->findAll(), "json"), 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($productRepository->findAll(), "json", SerializationContext::create()->setGroups(["product"])), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
@@ -30,7 +31,7 @@ class ProductController extends AbstractController
             if (!$product) {
                 return new JsonResponse(['message' => 'Product not found'], 404);
             }
-            return new JsonResponse($serializerInterface->serialize($product, "json"), 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($product, "json", SerializationContext::create()->setGroups(["single_product"])), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
