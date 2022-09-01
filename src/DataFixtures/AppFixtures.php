@@ -38,6 +38,13 @@ class AppFixtures extends Fixture
         $user->setExpiryDate(new \DateTime('+1 year'));
         $manager->persist($user);
 
+        $user2 = new User();
+        $user2->setEmail('userexpired@gmail.com');
+        $user2->setPassword($this->userPasswordHasherInterface->hashPassword($user2, 'password'));
+        $user2->setRoles(['ROLE_USER']);
+        $user2->setExpiryDate(new \DateTime('-1 week'));
+        $manager->persist($user2);
+
         for ($i = 0; $i < 10; $i++) {
             $product = new Product();
             $product->setName('Product ' . $i);
@@ -49,6 +56,7 @@ class AppFixtures extends Fixture
             $client->setFullName('Client ' . $i);
             $client->setEmail('client' . $i . '@gmail.com');
             $client->setCreatedAt(new \DateTimeImmutable());
+            $client->setUpdatedAt(new \DateTimeImmutable());
             $client->setUserId($user);
             $manager->persist($client);
         }

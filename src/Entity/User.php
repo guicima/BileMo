@@ -150,4 +150,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function isExpired(): bool
+    {
+        return $this->expiry_date !== null && $this->expiry_date < new \DateTime();
+    }
 }

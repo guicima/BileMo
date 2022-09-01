@@ -13,6 +13,7 @@ security:
     firewalls:
         api:
             pattern: ^/api
+            user_checker: App\Security\UserChecker
             stateless: true
             entry_point: jwt
             json_login:

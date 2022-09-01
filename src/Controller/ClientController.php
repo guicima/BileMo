@@ -9,6 +9,7 @@ use JMS\Serializer\DeserializationContext;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -63,25 +64,61 @@ class ClientController extends AbstractController
 
             $clientRepository->remove($client);
             $entityManager->flush();
-            return new JsonResponse(null, 200);
+            return new JsonResponse(null, 204);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 
     #[Route('/client', name: 'app_client_create', methods: ['POST'])]
-    public function create(Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine): JsonResponse
+    public function create(Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): JsonResponse
     {
         try {
             $entityManager = $doctrine->getManager();
             $clientRepository = $entityManager->getRepository(Client::class);
             $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', DeserializationContext::create()->setGroups(["client_creation"]));
-            // $client = $serializerInterface->deserialize($request->getContent(), Client::class, "json");
             $client->setUserId($security->getUser());
             $client->setCreatedAt(new \DateTimeImmutable());
+            $client->setUpdatedAt(new \DateTimeImmutable());
+
+            $errors = $validator->validate($client);
+            if (count($errors) > 0) {
+                return new JsonResponse($serializerInterface->serialize($errors, 'json'), 400, [], true);
+            }
+
             $clientRepository->add($client);
             $entityManager->flush();
-            return new JsonResponse(null, 200);
+            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 201, [], true);
+        } catch (\Throwable $th) {
+            return new JsonResponse(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #[Route('/client/{id}', name: 'app_client_update', methods: ['PUT'])]
+    public function update(int $id, Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): JsonResponse
+    {
+        try {
+            $entityManager = $doctrine->getManager();
+            $clientRepository = $entityManager->getRepository(Client::class);
+            $client = $clientRepository->find($id);
+            $hasClient = $security->getUser()->getClients()->contains($client);
+            if (!$hasClient) {
+                return new JsonResponse(['message' => 'Client not found'], 404);
+            }
+
+            $clientUpdate = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', DeserializationContext::create()->setGroups(["client_creation"]));
+
+            $client->setFullName($clientUpdate->getFullName());
+            $client->setEmail($clientUpdate->getEmail());
+            $client->setUpdatedAt(new \DateTimeImmutable());
+
+            $errors = $validator->validate($client);
+            if (count($errors) > 0) {
+                return new JsonResponse(['message' => $errors], 400);
+            }
+
+            $entityManager->flush();
+            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
