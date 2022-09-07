@@ -12,7 +12,7 @@ class Client
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[Groups(['client', 'single_client',])]
+    #[Groups(['client', 'single_client'])]
     #[ORM\Column]
     private ?int $id = null;
 
