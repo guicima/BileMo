@@ -73,7 +73,7 @@ class ProductController extends AbstractController
         description: 'Returns a product',
         content: new OA\JsonContent(
             type: 'object',
-            ref: new Model(type: Product::class, groups: ['product'])
+            ref: new Model(type: Product::class, groups: ['single_product'])
         )
     )]
     #[OA\Response(
