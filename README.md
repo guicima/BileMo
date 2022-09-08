@@ -18,6 +18,11 @@ Install composer dependencies
 composer install
 ```
 
+Generate JWT keypair
+```sh
+php bin/console lexik:jwt:generate-keypair
+```
+
 Start containers
 ```sh
 docker-compose up
@@ -27,6 +32,12 @@ or
 docker-compose up -d
 ```
 to run in detached mode.
+
+Load database
+```sh
+php bin/console doctrine:migrations:migrate
+php bin/console doctrine:fixtures:load -n
+```
 
 Start project in local
 ```sh
