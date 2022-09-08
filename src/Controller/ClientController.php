@@ -21,6 +21,9 @@ use Nelmio\ApiDocBundle\Annotation\Security as NelmioSecurity;
 
 class ClientController extends AbstractController
 {
+    /**
+     * Returns a list of clients
+     */
     #[Route('/client', name: 'app_client', methods: ['GET'])]
     #[OA\Response(
         response: 200,
@@ -73,6 +76,9 @@ class ClientController extends AbstractController
         }
     }
 
+    /**
+     * Returns a client
+     */
     #[Route('/client/{id}', name: 'app_client_show', methods: ['GET'])]
     #[OA\Response(
         response: 200,
@@ -112,6 +118,9 @@ class ClientController extends AbstractController
         }
     }
 
+    /**
+     * Deletes a client
+     */
     #[Route('/client/{id}', name: 'app_client_delete', methods: ['DELETE'])]
     #[OA\Response(
         response: 204,
@@ -153,6 +162,9 @@ class ClientController extends AbstractController
         }
     }
 
+    /**
+     * Creates a client
+     */
     #[Route('/client', name: 'app_client_create', methods: ['POST'])]
     #[OA\RequestBody(
         description: 'Create a client',
@@ -207,6 +219,9 @@ class ClientController extends AbstractController
         }
     }
 
+    /**
+     * Updates a client
+     */
     #[Route('/client/{id}', name: 'app_client_update', methods: ['PUT'])]
     #[OA\RequestBody(
         description: 'Update a client',

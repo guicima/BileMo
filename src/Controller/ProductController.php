@@ -17,6 +17,10 @@ use Nelmio\ApiDocBundle\Annotation\Security;
 #[Route('/products')]
 class ProductController extends AbstractController
 {
+
+    /**
+     * Returns a list of products
+     */
     #[Route(name: 'show_all_products', methods: ['GET'])]
     #[OA\Response(
         response: 200,
@@ -60,6 +64,9 @@ class ProductController extends AbstractController
         }
     }
 
+    /**
+     * Returns a product
+     */
     #[Route(path: '/{id}', name: 'show_product', methods: ['GET'])]
     #[OA\Response(
         response: 200,

@@ -4,7 +4,71 @@ nelmio_api_doc:
             title: BileMo API
             description: This is the API documentation for BileMo, a fictitious company that sells mobile phones.
             version: 1.0.0
+        paths:
+            /api/login:
+                post:
+                    tags:
+                        - Authentication
+                    operationId: login
+                    summary: Login user and returns a JWT token and a refresh token.
+                    requestBody:
+                        description: Login with username and password.
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: '#/components/schemas/Credentials'
+                    responses:
+                        '200': 
+                            description: Login successful.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/Token'
+            /api/token/refresh:
+                post:
+                    tags:
+                        - Token
+                    operationId: refreshToken
+                    summary: Refresh JWT token.
+                    requestBody:
+                        description: Refresh token.
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: '#/components/schemas/RefreshToken'
+                    responses:
+                        '200': 
+                            description: Refresh successful.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/Token'
         components:
+            schemas:
+                RefreshToken:
+                    type: object
+                    properties:
+                        refresh_token:
+                            type: string
+                            default: refresh_token
+                Token:
+                    type: object
+                    properties:
+                        token:
+                            type: string
+                            readOnly: true
+                        refresh_token:
+                            type: string
+                            readOnly: true
+                Credentials:
+                    type: object
+                    properties:
+                        username:
+                            type: string
+                            default: admin@bookapi.com
+                        password:
+                            type: string
+                            default: password
             securitySchemes:
                 Bearer:
                     type: http
@@ -14,4 +78,4 @@ nelmio_api_doc:
             Bearer: []
     areas: # to filter documented areas
         path_patterns:
-            - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
+            - ^/api(?!/doc)(?!.json$) # Accepts routes under /api except /api/doc
