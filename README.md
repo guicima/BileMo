@@ -49,3 +49,4 @@ symfony serve
 |Container | Address |
 |--|:--:|
 | BileMo | [http://localhost:8000/](http://localhost:8000/) |
+| BileMo documentation | [http://localhost:8000/api/doc](http://localhost:8000/api/doc) |
