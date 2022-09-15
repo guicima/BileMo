@@ -146,9 +146,11 @@ class ClientController extends AbstractController
             $entityManager = $doctrine->getManager();
             $clientRepository = $entityManager->getRepository(Client::class);
 
-            $client = $clientRepository->find($id);
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $hasClient = $user()->getClients()->contains($client);
+            $client = $user->getClients()->filter(function ($client) use ($id) {
+                return $client->getId() === $id;
+            })->first();
+            $hasClient = $client !== false;
 
             if (!$hasClient) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
@@ -260,10 +262,11 @@ class ClientController extends AbstractController
     {
         try {
             $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
-            $client = $clientRepository->find($id);
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $hasClient = $user()->getClients()->contains($client);
+            $client = $user->getClients()->filter(function ($client) use ($id) {
+                return $client->getId() === $id;
+            })->first();
+            $hasClient = $client !== false;
             if (!$hasClient) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
             }
