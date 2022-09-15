@@ -18,6 +18,8 @@ use Symfony\Component\Security\Core\Security;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Security as NelmioSecurity;
+use Hateoas\Representation\PaginatedRepresentation;
+use Hateoas\Representation\CollectionRepresentation;
 
 class ClientController extends AbstractController
 {
@@ -59,18 +61,39 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function index(Security $security, SerializerInterface $serializerInterface, Request $request, ClientRepository $clientRepository, UserRepository $userRepository): JsonResponse
+    public function index(Security $security, SerializerInterface $serializerInterface, Request $request, UserRepository $userRepository): JsonResponse
     {
         try {
             $page = $request->query->get('page') != null ? $request->query->get('page') : 1;
             $limit = $request->query->get('limit') != null ? $request->query->get('limit') : 10;
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $clients = $clientRepository->findAllPaginatedWhereUserIsOwner($page, $limit, $user->getId());
+            $clients = $user->getClients();
+            $pages = ceil(count($clients) / $limit);
+            $paginatedCollection = new PaginatedRepresentation(
+                new CollectionRepresentation(
+                    array_slice($clients->toArray(), ($page - 1) * $limit, $limit),
+                    'items'
+                ),
+                'app_client',
+                array(),
+                $page,
+                $limit,
+                $pages,
+                'page',
+                'limit',
+                true,
+            );
 
             if (!$clients) {
                 return new JsonResponse(['message' => 'Clients not found'], 404);
             }
-            return new JsonResponse("{\"clients\" => " . $serializerInterface->serialize($clients, "json", SerializationContext::create()->setGroups(["client"])) . ", \"page\" => " . $page . ", \"limit\" => " . $limit . ",}", 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($paginatedCollection, 'json', SerializationContext::create()->setGroups([
+                'Default',
+                'items' => [
+                    'Default',
+                    'client'
+                ]
+            ])), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
@@ -112,7 +135,7 @@ class ClientController extends AbstractController
             if (!$client) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
             }
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($client, "json", null), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
@@ -215,7 +238,7 @@ class ClientController extends AbstractController
 
             $clientRepository->add($client);
             $entityManager->flush();
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 201, [], true);
+            return new JsonResponse($serializerInterface->serialize($client, "json", null), 201, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
@@ -283,7 +306,7 @@ class ClientController extends AbstractController
             }
 
             $entityManager->flush();
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($client, "json", null), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }

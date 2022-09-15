@@ -4,26 +4,47 @@ namespace App\Entity;
 
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation\Groups;
+use Hateoas\Configuration\Annotation as Hateoas;
+use JMS\Serializer\Annotation as Serializer;
 
+/**
+ * @Hateoas\Relation("self", href = @Hateoas\Route(
+ *          "show_product",
+ *          parameters = { "id" = "expr(object.getId())" },
+ *          absolute = true
+ *      ))
+ * @Serializer\ExclusionPolicy("all")
+ */
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"product", "single_product"})
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[Groups(['product'])]
     #[ORM\Column(type: 'integer')]
     private $id;
 
-    #[Groups(['product', 'single_product'])]
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"product", "single_product"})
+     */
     #[ORM\Column(type: 'string', length: 255)]
     private $name;
 
-    #[Groups(['single_product'])]
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"sensitive", "single_product"})
+     */
     #[ORM\Column(type: 'string', length: 255)]
     private $description;
 
-    #[Groups(['single_product'])]
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"sensitive", "single_product"})
+     */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
