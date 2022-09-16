@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Hateoas\Configuration\Annotation as Hateoas;
 use JMS\Serializer\Annotation as Serializer;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @Serializer\ExclusionPolicy("all")
@@ -24,9 +25,10 @@ class Client
      * @Serializer\Groups({"client", "single_client"})
      */
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'uuid', unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    private ?Uuid $id = null;
 
     /** @Serializer\Exclude */
     #[ORM\ManyToOne(inversedBy: 'clients')]
@@ -64,7 +66,7 @@ class Client
     #[ORM\Column]
     private ?\DateTimeImmutable $updated_at = null;
 
-    public function getId(): ?int
+    public function getId(): ?Uuid
     {
         return $this->id;
     }

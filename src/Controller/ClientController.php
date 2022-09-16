@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Client;
-use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use JMS\Serializer\DeserializationContext;
@@ -20,6 +19,7 @@ use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Security as NelmioSecurity;
 use Hateoas\Representation\PaginatedRepresentation;
 use Hateoas\Representation\CollectionRepresentation;
+use Symfony\Component\Uid\Uuid;
 
 class ClientController extends AbstractController
 {
@@ -125,12 +125,12 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function show(int $id, Security $security, SerializerInterface $serializerInterface, UserRepository $userRepository): JsonResponse
+    public function show(Uuid $id, Security $security, SerializerInterface $serializerInterface, UserRepository $userRepository): JsonResponse
     {
         try {
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
             $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() === $id;
+                return $client->getId() == $id;
             })->first();
             if (!$client) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
@@ -163,7 +163,7 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function delete(int $id, Security $security, ManagerRegistry $doctrine, UserRepository $userRepository): JsonResponse
+    public function delete(Uuid $id, Security $security, ManagerRegistry $doctrine, UserRepository $userRepository): JsonResponse
     {
         try {
             $entityManager = $doctrine->getManager();
@@ -171,11 +171,10 @@ class ClientController extends AbstractController
 
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
             $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() === $id;
+                return $client->getId() == $id;
             })->first();
-            $hasClient = $client !== false;
 
-            if (!$hasClient) {
+            if (!$client) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
             }
 
@@ -281,16 +280,16 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function update(int $id, Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, UserRepository $userRepository): JsonResponse
+    public function update(Uuid $id, Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, UserRepository $userRepository): JsonResponse
     {
         try {
             $entityManager = $doctrine->getManager();
             $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
             $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() === $id;
+                return $client->getId() == $id;
             })->first();
-            $hasClient = $client !== false;
-            if (!$hasClient) {
+
+            if (!$client) {
                 return new JsonResponse(['message' => 'Client not found'], 404);
             }
 
