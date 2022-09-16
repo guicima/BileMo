@@ -4,37 +4,63 @@ namespace App\Entity;
 
 use App\Repository\ClientRepository;
 use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Hateoas\Configuration\Annotation as Hateoas;
+use JMS\Serializer\Annotation as Serializer;
 
+/**
+ * @Serializer\ExclusionPolicy("all")
+ * @Hateoas\Relation("self", href = @Hateoas\Route(
+ *          "app_client_show",
+ *          parameters = { "id" = "expr(object.getId())" },
+ *         absolute = true
+ *      ))
+ */
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 class Client
 {
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"client", "single_client"})
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[Groups(['client', 'single_client'])]
     #[ORM\Column]
     private ?int $id = null;
 
+    /** @Serializer\Exclude */
     #[ORM\ManyToOne(inversedBy: 'clients')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user_id = null;
 
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"client_creation", "single_client", "sensitive"})
+     */
     #[Assert\NotBlank]
-    #[Groups(['single_client', 'client_creation'])]
     #[ORM\Column(length: 255)]
     private ?string $full_name = null;
 
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"client_creation", "single_client", "client"})
+     */
     #[Assert\NotBlank]
     #[Assert\Email(message: "The email {{ value }} is not a valid email.")]
-    #[Groups(['client', 'single_client', 'client_creation'])]
     #[ORM\Column(length: 255)]
     private ?string $email = null;
 
-    #[Groups(['single_client'])]
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"single_client", "sensitive"})
+     */
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
+    /**
+     * @Serializer\Expose()
+     * @Serializer\Groups({"single_client", "sensitive"})
+     */
     #[ORM\Column]
     private ?\DateTimeImmutable $updated_at = null;
 

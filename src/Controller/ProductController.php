@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Security;
+use Hateoas\Representation\PaginatedRepresentation;
+use Hateoas\Representation\CollectionRepresentation;
 
 #[Route('/products')]
 class ProductController extends AbstractController
@@ -57,8 +59,26 @@ class ProductController extends AbstractController
         try {
             $page = $request->query->get('page') != null ? $request->query->get('page') : 1;
             $limit = $request->query->get('limit') != null ? $request->query->get('limit') : 10;
-            $products = $productRepository->findAllPaginated($page, $limit);
-            return new JsonResponse("{\"products\" => " . $serializerInterface->serialize($products, "json", SerializationContext::create()->setGroups(["product"])) . ", \"page\" => " . $page . ", \"limit\" => " . $limit . "}", 200, [], true);
+            $products = $productRepository->findAll();
+            $pages = ceil(count($products) / $limit);
+            $paginatedCollection = new PaginatedRepresentation(
+                new CollectionRepresentation(array_slice($products, ($page - 1) * $limit, $limit), 'items'),
+                'show_all_products',
+                array(),
+                $page,
+                $limit,
+                $pages,
+                'page',
+                'limit',
+                true,
+            );
+            return new JsonResponse($serializerInterface->serialize($paginatedCollection, 'json', SerializationContext::create()->setGroups([
+                'Default',
+                'items' => [
+                    'Default',
+                    'product'
+                ]
+            ])), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
@@ -97,7 +117,7 @@ class ProductController extends AbstractController
             if (!$product) {
                 return new JsonResponse(['message' => 'Product not found'], 404);
             }
-            return new JsonResponse($serializerInterface->serialize($product, "json", SerializationContext::create()->setGroups(["single_product"])), 200, [], true);
+            return new JsonResponse($serializerInterface->serialize($product, "json", null), 200, [], true);
         } catch (\Throwable $th) {
             return new JsonResponse(['message' => $th->getMessage()], 500);
         }
