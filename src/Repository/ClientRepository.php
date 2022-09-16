@@ -39,26 +39,6 @@ class ClientRepository extends ServiceEntityRepository
         }
     }
 
-    public function findAllPaginated(int $page = 1, int $limit = 10): array
-    {
-        $query = $this->createQueryBuilder('c')
-            ->orderBy('c.id', 'ASC')
-            ->getQuery();
-        $query->setFirstResult(($page - 1) * $limit)->setMaxResults($limit);
-        return $query->getResult();
-    }
-
-    public function findAllPaginatedWhereUserIsOwner(int $page = 1, int $limit = 10, int $userId): array
-    {
-        $query = $this->createQueryBuilder('c')
-            ->where('c.user_id = :userId')
-            ->setParameter('userId', $userId)
-            ->orderBy('c.id', 'ASC')
-            ->getQuery();
-        $query->setFirstResult(($page - 1) * $limit)->setMaxResults($limit);
-        return $query->getResult();
-    }
-
     //    /**
     //     * @return Client[] Returns an array of Client objects
     //     */

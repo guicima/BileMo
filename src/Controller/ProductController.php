@@ -15,6 +15,7 @@ use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Security;
 use Hateoas\Representation\PaginatedRepresentation;
 use Hateoas\Representation\CollectionRepresentation;
+use Symfony\Component\Uid\Uuid;
 
 #[Route('/products')]
 class ProductController extends AbstractController
@@ -110,7 +111,7 @@ class ProductController extends AbstractController
     )]
     #[OA\Tag(name: 'Products')]
     #[Security(name: 'Bearer')]
-    public function show(int $id, ProductRepository $productRepository, SerializerInterface $serializerInterface): JsonResponse
+    public function show(Uuid $id, ProductRepository $productRepository, SerializerInterface $serializerInterface): JsonResponse
     {
         try {
             $product = $productRepository->find($id);
