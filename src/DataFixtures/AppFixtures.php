@@ -47,9 +47,18 @@ class AppFixtures extends Fixture
 
         for ($i = 0; $i < 10; $i++) {
             $product = new Product();
-            $product->setName('Product ' . $i);
-            $product->setDescription(md5(rand(0, 1000000)));
-            $product->setImage(md5(rand(0, 1000000)));
+            $product->setName(rand(0, 1) == 1 ? 'iPhone ' . rand(8, 12) : 'Samsung S' . rand(9, 53));
+            $product->setDescription('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl eget aliquam ultricies, nunc nisl aliquam nisl, eget aliquam nunc nisl eget nunc.');
+            $product->setImage('https://www.backmarket.fr/cdn-cgi/image/format=auto,quality=75,width=640/https://d1eh9yux7w8iql.cloudfront.net/product_images/36827_24756a33-907f-4a5a-ac95-73ce492104e7.jpg');
+            $product->setPrice(rand(100, 1000));
+            $product->setHdd('128GB');
+            $product->setRam('4GB');
+            $product->setCpu('A13 Bionic');
+            $product->setScreenSize('6.1"');
+            $product->setScreenResolution('1792 x 828');
+            $product->setBattery('3110mAh');
+            $product->setConnectivity('5G');
+
             $manager->persist($product);
 
             $client = new Client();
@@ -57,7 +66,7 @@ class AppFixtures extends Fixture
             $client->setEmail('client' . $i . '@gmail.com');
             $client->setCreatedAt(new \DateTimeImmutable());
             $client->setUpdatedAt(new \DateTimeImmutable());
-            $client->setUserId($user);
+            $client->setUser(rand(0, 1) == 1 ? $user : $user2);
             $manager->persist($client);
         }
 

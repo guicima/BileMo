@@ -30,7 +30,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private $password;
 
-    #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Client::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Client::class, orphanRemoval: true)]
     private Collection $clients;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -123,7 +123,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->clients->contains($client)) {
             $this->clients->add($client);
-            $client->setUserId($this);
+            $client->setUser($this);
         }
 
         return $this;
@@ -133,8 +133,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->clients->removeElement($client)) {
             // set the owning side to null (unless already changed)
-            if ($client->getUserId() === $this) {
-                $client->setUserId(null);
+            if ($client->getUser() === $this) {
+                $client->setUser(null);
             }
         }
 
