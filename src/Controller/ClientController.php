@@ -203,7 +203,7 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function create(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
+    public function create(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
             $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', Serializer\DeserializationContext::create()->setGroups(["client_creation"]));
