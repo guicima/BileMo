@@ -66,7 +66,7 @@ class AppFixtures extends Fixture
             $client->setEmail('client' . $i . '@gmail.com');
             $client->setCreatedAt(new \DateTimeImmutable());
             $client->setUpdatedAt(new \DateTimeImmutable());
-            $client->setUserId(rand(0, 1) == 1 ? $user : $user2);
+            $client->setUser(rand(0, 1) == 1 ? $user : $user2);
             $manager->persist($client);
         }
 

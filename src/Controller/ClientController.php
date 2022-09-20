@@ -222,7 +222,7 @@ class ClientController extends AbstractController
             $entityManager = $doctrine->getManager();
             $clientRepository = $entityManager->getRepository(Client::class);
             $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', Serializer\DeserializationContext::create()->setGroups(["client_creation"]));
-            $client->setUserId($security->getUser());
+            $client->setUser($security->getUser());
             $client->setCreatedAt(new \DateTimeImmutable());
             $client->setUpdatedAt(new \DateTimeImmutable());
 
