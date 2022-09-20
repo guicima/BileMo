@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Client;
-use App\Repository\UserRepository;
+use App\Repository\ClientRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use JMS\Serializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -57,13 +57,12 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function index(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, UserRepository $userRepository): HttpFoundation\JsonResponse
+    public function index(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request): HttpFoundation\JsonResponse
     {
         try {
             $page = $request->query->get('page') != null ? $request->query->get('page') : 1;
             $limit = $request->query->get('limit') != null ? $request->query->get('limit') : 10;
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $clients = $user->getClients();
+            $clients = $security->getUser()->getClients();
             $pages = ceil(count($clients) / $limit);
             $paginatedCollection = new Representation\PaginatedRepresentation(
                 new Representation\CollectionRepresentation(
@@ -121,14 +120,11 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function show(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, UserRepository $userRepository): HttpFoundation\JsonResponse
+    public function show(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() == $id;
-            })->first();
-            if (!$client) {
+            $client = $clientRepository->find($id);
+            if (!$client || !($client->getUser() == $security->getUser())) {
                 return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
             return new HttpFoundation\JsonResponse($serializerInterface->serialize($client, "json", null), 200, [], true);
@@ -159,23 +155,14 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function delete(Uuid $id, Security $security, ManagerRegistry $doctrine, UserRepository $userRepository): HttpFoundation\JsonResponse
+    public function delete(Uuid $id, Security $security, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
-
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() == $id;
-            })->first();
-
-            if (!$client) {
+            $client = $clientRepository->find($id);
+            if (!$client || !($client->getUser() == $security->getUser())) {
                 return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
-
-            $clientRepository->remove($client);
-            $entityManager->flush();
+            $clientRepository->remove($client, true);
             return new HttpFoundation\JsonResponse(null, 204);
         } catch (\Throwable $th) {
             return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
@@ -216,11 +203,9 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function create(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): HttpFoundation\JsonResponse
+    public function create(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
             $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', Serializer\DeserializationContext::create()->setGroups(["client_creation"]));
             $client->setUser($security->getUser());
             $client->setCreatedAt(new \DateTimeImmutable());
@@ -231,8 +216,7 @@ class ClientController extends AbstractController
                 return new HttpFoundation\JsonResponse($serializerInterface->serialize($errors, 'json'), 400, [], true);
             }
 
-            $clientRepository->add($client);
-            $entityManager->flush();
+            $clientRepository->add($client, true);
             return new HttpFoundation\JsonResponse($serializerInterface->serialize($client, "json", null), 201, [], true);
         } catch (\Throwable $th) {
             return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
@@ -276,16 +260,13 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function update(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, UserRepository $userRepository): HttpFoundation\JsonResponse
+    public function update(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
             $entityManager = $doctrine->getManager();
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() == $id;
-            })->first();
+            $client = $clientRepository->find($id);
 
-            if (!$client) {
+            if (!$client || !($client->getUser() == $security->getUser())) {
                 return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
 
