@@ -4,20 +4,18 @@ namespace App\Controller;
 
 use App\Entity\Client;
 use App\Repository\ClientRepository;
-use App\Repository\UserRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use JMS\Serializer\DeserializationContext;
-use JMS\Serializer\SerializationContext;
-use JMS\Serializer\SerializerInterface;
+use JMS\Serializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Security;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Security as NelmioSecurity;
+use Hateoas\Representation;
+use Symfony\Component\Uid\Uuid;
 
 class ClientController extends AbstractController
 {
@@ -59,20 +57,40 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function index(Security $security, SerializerInterface $serializerInterface, Request $request, ClientRepository $clientRepository, UserRepository $userRepository): JsonResponse
+    public function index(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request): HttpFoundation\JsonResponse
     {
         try {
             $page = $request->query->get('page') != null ? $request->query->get('page') : 1;
             $limit = $request->query->get('limit') != null ? $request->query->get('limit') : 10;
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $clients = $clientRepository->findAllPaginatedWhereUserIsOwner($page, $limit, $user->getId());
+            $clients = $security->getUser()->getClients();
+            $pages = ceil(count($clients) / $limit);
+            $paginatedCollection = new Representation\PaginatedRepresentation(
+                new Representation\CollectionRepresentation(
+                    array_slice($clients->toArray(), ($page - 1) * $limit, $limit),
+                    'items'
+                ),
+                'app_client',
+                array(),
+                $page,
+                $limit,
+                $pages,
+                'page',
+                'limit',
+                true,
+            );
 
             if (!$clients) {
-                return new JsonResponse(['message' => 'Clients not found'], 404);
+                return new HttpFoundation\JsonResponse(['message' => 'Clients not found'], 404);
             }
-            return new JsonResponse("{\"clients\" => " . $serializerInterface->serialize($clients, "json", SerializationContext::create()->setGroups(["client"])) . ", \"page\" => " . $page . ", \"limit\" => " . $limit . ",}", 200, [], true);
+            return new HttpFoundation\JsonResponse($serializerInterface->serialize($paginatedCollection, 'json', Serializer\SerializationContext::create()->setGroups([
+                'Default',
+                'items' => [
+                    'Default',
+                    'client'
+                ]
+            ])), 200, [], true);
         } catch (\Throwable $th) {
-            return new JsonResponse(['message' => $th->getMessage()], 500);
+            return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -102,19 +120,16 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function show(int $id, Security $security, SerializerInterface $serializerInterface, UserRepository $userRepository): JsonResponse
+    public function show(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $client = $user->getClients()->filter(function ($client) use ($id) {
-                return $client->getId() === $id;
-            })->first();
-            if (!$client) {
-                return new JsonResponse(['message' => 'Client not found'], 404);
+            $client = $clientRepository->find($id);
+            if (!$client || !($client->getUser() == $security->getUser())) {
+                return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 200, [], true);
+            return new HttpFoundation\JsonResponse($serializerInterface->serialize($client, "json", null), 200, [], true);
         } catch (\Throwable $th) {
-            return new JsonResponse(['message' => $th->getMessage()], 500);
+            return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -140,25 +155,17 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function delete(int $id, Security $security, ManagerRegistry $doctrine, UserRepository $userRepository): JsonResponse
+    public function delete(Uuid $id, Security $security, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
-
             $client = $clientRepository->find($id);
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $hasClient = $user()->getClients()->contains($client);
-
-            if (!$hasClient) {
-                return new JsonResponse(['message' => 'Client not found'], 404);
+            if (!$client || !($client->getUser() == $security->getUser())) {
+                return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
-
-            $clientRepository->remove($client);
-            $entityManager->flush();
-            return new JsonResponse(null, 204);
+            $clientRepository->remove($client, true);
+            return new HttpFoundation\JsonResponse(null, 204);
         } catch (\Throwable $th) {
-            return new JsonResponse(['message' => $th->getMessage()], 500);
+            return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -196,26 +203,23 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function create(Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): JsonResponse
+    public function create(Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
-            $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
-            $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', DeserializationContext::create()->setGroups(["client_creation"]));
-            $client->setUserId($security->getUser());
+            $client = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', Serializer\DeserializationContext::create()->setGroups(["client_creation"]));
+            $client->setUser($security->getUser());
             $client->setCreatedAt(new \DateTimeImmutable());
             $client->setUpdatedAt(new \DateTimeImmutable());
 
             $errors = $validator->validate($client);
             if (count($errors) > 0) {
-                return new JsonResponse($serializerInterface->serialize($errors, 'json'), 400, [], true);
+                return new HttpFoundation\JsonResponse($serializerInterface->serialize($errors, 'json'), 400, [], true);
             }
 
-            $clientRepository->add($client);
-            $entityManager->flush();
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 201, [], true);
+            $clientRepository->add($client, true);
+            return new HttpFoundation\JsonResponse($serializerInterface->serialize($client, "json", null), 201, [], true);
         } catch (\Throwable $th) {
-            return new JsonResponse(['message' => $th->getMessage()], 500);
+            return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -256,19 +260,17 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: 'Clients')]
     #[NelmioSecurity(name: 'Bearer')]
-    public function update(int $id, Security $security, SerializerInterface $serializerInterface, Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, UserRepository $userRepository): JsonResponse
+    public function update(Uuid $id, Security $security, Serializer\SerializerInterface $serializerInterface, HttpFoundation\Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, ClientRepository $clientRepository): HttpFoundation\JsonResponse
     {
         try {
             $entityManager = $doctrine->getManager();
-            $clientRepository = $entityManager->getRepository(Client::class);
             $client = $clientRepository->find($id);
-            $user = $userRepository->findOneBy(['email' => $security->getUser()->getUserIdentifier()]);
-            $hasClient = $user()->getClients()->contains($client);
-            if (!$hasClient) {
-                return new JsonResponse(['message' => 'Client not found'], 404);
+
+            if (!$client || !($client->getUser() == $security->getUser())) {
+                return new HttpFoundation\JsonResponse(['message' => 'Client not found'], 404);
             }
 
-            $clientUpdate = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', DeserializationContext::create()->setGroups(["client_creation"]));
+            $clientUpdate = $serializerInterface->deserialize($request->getContent(), Client::class, 'json', Serializer\DeserializationContext::create()->setGroups(["client_creation"]));
 
             $client->setFullName($clientUpdate->getFullName());
             $client->setEmail($clientUpdate->getEmail());
@@ -276,13 +278,13 @@ class ClientController extends AbstractController
 
             $errors = $validator->validate($client);
             if (count($errors) > 0) {
-                return new JsonResponse(['message' => $errors], 400);
+                return new HttpFoundation\JsonResponse(['message' => $errors], 400);
             }
 
             $entityManager->flush();
-            return new JsonResponse($serializerInterface->serialize($client, "json", SerializationContext::create()->setGroups(["single_client"])), 200, [], true);
+            return new HttpFoundation\JsonResponse($serializerInterface->serialize($client, "json", null), 200, [], true);
         } catch (\Throwable $th) {
-            return new JsonResponse(['message' => $th->getMessage()], 500);
+            return new HttpFoundation\JsonResponse(['message' => $th->getMessage()], 500);
         }
     }
 }

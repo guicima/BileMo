@@ -39,15 +39,6 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
-    public function findAllPaginated(int $page = 1, int $limit = 10): array
-    {
-        $query = $this->createQueryBuilder('p')
-            ->orderBy('p.id', 'ASC')
-            ->getQuery();
-        $query->setFirstResult(($page - 1) * $limit)->setMaxResults($limit);
-        return $query->getResult();
-    }
-
     //    /**
     //     * @return Product[] Returns an array of Product objects
     //     */

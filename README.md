@@ -2,7 +2,7 @@
 BileMo is a company offering a whole selection of high-end mobile phones.
 
 ## Set up the environnement
-**Install dependencies**
+### Install dependencies
 
 Install Docker
 [Get Docker](https://docs.docker.com/get-docker/)
@@ -10,8 +10,7 @@ Install Docker
 Install Composer
 [Get Composer](https://getcomposer.org/)
 
-**Start the project**
-
+### Start the project
 
 Install composer dependencies
 ```sh
@@ -44,7 +43,7 @@ Start project in local
 symfony serve
 ```
 
-**Access the project**
+### Access the project
 
 |Container | Address |
 |--|:--:|
