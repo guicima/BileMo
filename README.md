@@ -1,6 +1,8 @@
 # BileMo
 BileMo is a company offering a whole selection of high-end mobile phones.
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d80c00dc2294ef2ad47c5c2fc9ede48)](https://www.codacy.com/gh/guicima/BileMo/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=guicima/BileMo&amp;utm_campaign=Badge_Grade)
+
 ## Set up the environnement
 ### Install dependencies
 

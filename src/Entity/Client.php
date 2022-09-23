@@ -16,6 +16,20 @@ use Symfony\Component\Uid\Uuid;
  *          parameters = { "id" = "expr(object.getId())" },
  *         absolute = true
  *      ))
+ * @Hateoas\Relation("create", href = @Hateoas\Route(
+ *          "app_client_create",
+ *         absolute = true
+ *      ))
+ * @Hateoas\Relation("update", href = @Hateoas\Route(
+ *          "app_client_update",
+ *          parameters = { "id" = "expr(object.getId())" },
+ *         absolute = true
+ *      ))
+ * @Hateoas\Relation("delete", href = @Hateoas\Route(
+ *          "app_client_delete",
+ *          parameters = { "id" = "expr(object.getId())" },
+ *         absolute = true
+ *      ))
  */
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 class Client
